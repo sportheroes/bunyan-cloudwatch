@@ -72,12 +72,13 @@ CloudWatchStream.prototype._writeLogs = function _writeLogs() {
       if (err) {
         if (err.retryable) return setTimeout(writeLog, obj.writeInterval);
         if (err.code === 'InvalidSequenceTokenException') {
-          return obj._getSequenceToken(function () {
-            obj.setSequence(log.sequenceToken);
+          const token = err.message.split('is: ')[1];
+          obj.sequenceToken = token;
+          log.sequenceToken = token;
+          obj.setSequence(token);
 
-            log.sequenceToken = obj.sequenceToken;
-            setTimeout(writeLog, 0);
-          }, true);
+          setTimeout(writeLog, 0);
+          return;
         }
         return obj._error(err);
       }
@@ -110,7 +111,7 @@ CloudWatchStream.prototype._getSequenceToken = function _getSequenceToken(done, 
 
         // Missing stream;
         createLogStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, err => {
-          if (err.name === 'ResourceNotFoundException') {
+          if (err && err.name === 'ResourceNotFoundException') {
             // Missing group & stream:
             return createLogGroupAndStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, done);
           }
