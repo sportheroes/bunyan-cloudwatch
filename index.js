@@ -35,6 +35,10 @@ function CloudWatchStream(opts) {
 CloudWatchStream.prototype.setSequence = function setSequence(sequence) {
   const key = this.logGroupName + '_' + this.logStreamName;
 
+  if (sequence === undefined) {
+    return Promise.resolve();
+  }
+
   return this.sequenceStore.set(key, sequence);
 };
 
@@ -115,6 +119,8 @@ CloudWatchStream.prototype._getSequenceToken = function _getSequenceToken(done, 
             // Missing group & stream:
             return createLogGroupAndStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, done);
           }
+
+          obj.sequenceToken = undefined;
 
           done();
         });
