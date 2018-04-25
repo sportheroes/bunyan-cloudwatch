@@ -75,7 +75,7 @@ CloudWatchStream.prototype._writeLogs = function _writeLogs() {
     obj.cloudwatch.putLogEvents(log, function (err, res) {
       if (err) {
         if (err.retryable) return setTimeout(writeLog, obj.writeInterval);
-        if (err.code === 'InvalidSequenceTokenException') {
+        if (err.code === 'DataAlreadyAcceptedException' || err.code === 'InvalidSequenceTokenException') {
           const token = err.message.split('is: ')[1];
           obj.sequenceToken = token;
           log.sequenceToken = token;
