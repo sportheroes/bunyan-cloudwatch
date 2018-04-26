@@ -86,7 +86,7 @@ CloudWatchStream.prototype._writeLogs = function _writeLogs() {
         }
         return obj._error(err);
       }
-      obj.setSequence(log.sequenceToken);
+      obj.setSequence(res.nextSequenceToken);
 
       obj.sequenceToken = res.nextSequenceToken;
       if (obj.queuedLogs.length) {
