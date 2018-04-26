@@ -6,93 +6,75 @@ var safeJsonStringify = require('safe-json-stringify');
 
 var jsonStringify = safeJsonStringify ? safeJsonStringify : JSON.stringify;
 
-var sequenceStoreFallback = new WeakMap();
-
 module.exports = createCloudWatchStream;
 
 function createCloudWatchStream(opts) {
   return new CloudWatchStream(opts);
 }
 
+var cloudwatch = null;
+var queuedLogs = [];
+var sequenceToken = null;
+var writeQueued = false;
+
 util.inherits(CloudWatchStream, Writable);
 function CloudWatchStream(opts) {
   Writable.call(this, {objectMode: true});
   this.logGroupName = opts.logGroupName;
-  this.logStreamName = opts.logStreamName;
+  this.logStreamName = `pid-${process.pid}`;
   this.writeInterval = opts.writeInterval || 0;
-  this.sequenceStore = opts.sequenceStore || sequenceStoreFallback;
 
   if (opts.AWS) {
     AWS = opts.AWS;
   }
 
-  this.cloudwatch = new AWS.CloudWatchLogs(opts.cloudWatchLogsOptions);
-  this.queuedLogs = [];
-  this.sequenceToken = null;
-  this.writeQueued = false;
+  if (!cloudwatch) {
+    cloudwatch = new AWS.CloudWatchLogs(opts.cloudWatchLogsOptions);
+  }
 }
 
-CloudWatchStream.prototype.setSequence = function setSequence(sequence) {
-  const key = this.logGroupName + '_' + this.logStreamName;
-
-  if (sequence === undefined) {
-    return Promise.resolve();
-  }
-
-  return this.sequenceStore.set(key, sequence);
-};
-
-CloudWatchStream.prototype.getSequence = function getSequence() {
-  const key = this.logGroupName + '_' + this.logStreamName;
-
-  return this.sequenceStore.get(key);
-};
-
 CloudWatchStream.prototype._write = function _write(record, _enc, cb) {
-  this.queuedLogs.push(record);
-  if (!this.writeQueued) {
-    this.writeQueued = true;
+  queuedLogs.push(record);
+  if (!writeQueued) {
+    writeQueued = true;
     setTimeout(this._writeLogs.bind(this), this.writeInterval);
   }
   cb();
 };
 
 CloudWatchStream.prototype._writeLogs = function _writeLogs() {
-  if (this.sequenceToken === null) {
+  if (sequenceToken === null) {
     return this._getSequenceToken(this._writeLogs.bind(this));
   }
   var log = {
     logGroupName: this.logGroupName,
     logStreamName: this.logStreamName,
-    sequenceToken: this.sequenceToken,
-    logEvents: this.queuedLogs.map(createCWLog)
+    sequenceToken: sequenceToken,
+    logEvents: queuedLogs.map(createCWLog)
   };
-  this.queuedLogs = [];
+  queuedLogs = [];
   var obj = this;
   writeLog();
 
   function writeLog() {
-    obj.cloudwatch.putLogEvents(log, function (err, res) {
+    cloudwatch.putLogEvents(log, function (err, res) {
       if (err) {
         if (err.retryable) return setTimeout(writeLog, obj.writeInterval);
         if (err.code === 'DataAlreadyAcceptedException' || err.code === 'InvalidSequenceTokenException') {
           const token = err.message.split('is: ')[1];
-          obj.sequenceToken = token;
-          log.sequenceToken = token;
-          obj.setSequence(token);
+          sequenceToken = token;
 
           setTimeout(writeLog, 0);
           return;
         }
         return obj._error(err);
       }
-      obj.setSequence(res.nextSequenceToken);
 
-      obj.sequenceToken = res.nextSequenceToken;
-      if (obj.queuedLogs.length) {
+      sequenceToken = res.nextSequenceToken;
+      if (queuedLogs.length) {
         return setTimeout(obj._writeLogs.bind(obj), obj.writeInterval);
       }
-      obj.writeQueued = false;
+      writeQueued = false;
     });
   }
 };
@@ -105,43 +87,33 @@ CloudWatchStream.prototype._getSequenceToken = function _getSequenceToken(done, 
   var obj = this;
 
   if (!force) {
-    return this.getSequence()
-      .then(token => {
-        if (token) {
-          obj.sequenceToken = token;
+    // Missing stream;
+    createLogStream(cloudwatch, obj.logGroupName, obj.logStreamName, err => {
+      if (err && err.name === 'ResourceNotFoundException') {
+        // Missing group & stream:
+        return createLogGroupAndStream(cloudwatch, obj.logGroupName, obj.logStreamName, done);
+      }
 
-          return done();
-        }
+      sequenceToken = undefined;
 
-        // Missing stream;
-        createLogStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, err => {
-          if (err && err.name === 'ResourceNotFoundException') {
-            // Missing group & stream:
-            return createLogGroupAndStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, done);
-          }
-
-          obj.sequenceToken = undefined;
-
-          done();
-        });
-      })
+      done();
+    });
   }
 
-  this.cloudwatch.describeLogStreams(params, function (err, data) {
+  cloudwatch.describeLogStreams(params, function (err, data) {
     if (err) {
       if (err.name === 'ResourceNotFoundException') {
-        createLogGroupAndStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, createStreamCb);
+        createLogGroupAndStream(cloudwatch, obj.logGroupName, obj.logStreamName, createStreamCb);
         return;
       }
       obj._error(err);
       return;
     }
     if (data.logStreams.length === 0) {
-      createLogStream(obj.cloudwatch, obj.logGroupName, obj.logStreamName, createStreamCb);
+      createLogStream(cloudwatch, obj.logGroupName, obj.logStreamName, createStreamCb);
       return;
     }
-    obj.sequenceToken = data.logStreams[0].uploadSequenceToken;
-    obj.setSequence(obj.sequenceToken);
+    sequenceToken = data.logStreams[0].uploadSequenceToken;
 
     done();
   });
