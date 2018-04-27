@@ -23,6 +23,7 @@ function CloudWatchStream(opts) {
   this.logGroupName = opts.logGroupName;
   this.logStreamName = `pid-${process.pid}`;
   this.writeInterval = opts.writeInterval || 0;
+  this.onError = opts.onError || null;
 
   if (opts.AWS) {
     AWS = opts.AWS;
@@ -127,7 +128,6 @@ CloudWatchStream.prototype._getSequenceToken = function _getSequenceToken(done, 
 
 CloudWatchStream.prototype._error = function _error(err) {
   if (this.onError) return this.onError(err);
-  throw err;
 };
 
 function createLogGroupAndStream(cloudwatch, logGroupName, logStreamName, cb) {
