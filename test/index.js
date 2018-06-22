@@ -1,6 +1,6 @@
 
 var assert = require('assert');
-var bunyan = require('bunyan');
+var bunyan = require('@sportheroes/bk-bunyan');
 var proxyquire = require('proxyquire');
 
 var logGroupName = 'test-group';

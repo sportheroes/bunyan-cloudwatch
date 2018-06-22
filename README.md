@@ -7,7 +7,7 @@ This is actually a plain [Node.js Writable](https://nodejs.org/api/stream.html#s
 ## Usage
 
 ``` js
-var bunyan = require('bunyan');
+var bunyan = require('@sportheroes/bk-bunyan');
 var createCWStream = require('bunyan-cloudwatch');
 
 var stream = createCWStream({

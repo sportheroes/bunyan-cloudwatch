@@ -1,7 +1,7 @@
 
 var AWS = require('aws-sdk');
 var uuid = require('uuid');
-var bunyan = require('bunyan');
+var bunyan = require('@sportheroes/bk-bunyan');
 var createCWStream = require('../');
 
 var region = 'us-west-1';
