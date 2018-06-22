@@ -6,6 +6,8 @@
   "repository": "git://github.com/mirkokiefer/bunyan-cloudwatch.git",
   "main": "index.js",
   "scripts": {
+    "release": "bk-standard-version",
+    "release-major": "bk-standard-version -- --release-as major",
     "test": "mocha test/index && npm run lint",
     "e2e-test": "mocha -t 60000 test/e2e",
     "lint": "eslint ."
