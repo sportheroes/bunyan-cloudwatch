@@ -1,0 +1,70 @@
+#=====#
+# GIT #
+#=====#
+.foreverignore
+commit.txt
+
+#======#
+# LOGS #
+#======#
+*.log
+logs
+npm-debug.log*
+
+#===============#
+# RUNTIME FILES #
+#===============#
+pids
+*.pid
+*.seed
+
+#=============#
+# TRASH FILES #
+#=============#
+.DS_Store
+.idea/
+.vscode/
+*.sublime-*
+dist/
+heapdump-*
+misc/
+tmp/
+typings/
+uploads/
+
+#=====#
+# NPM #
+#=====#
+.node_repl_history
+.npm
+.npmrc
+jspm_packages
+node_modules
+
+#===============#
+# DOCUMENTATION #
+#===============#
+docs/
+public/
+
+#==================#
+# COVERAGE REPORTS #
+#==================#
+.nyc_output/
+coverage/
+lib-cov/
+mochawesome-report/
+test-results.xml
+
+#====================#
+# COMPILED ARTIFACTS #
+#====================#
+.grunt
+.lock-wscript
+build/Release
+
+# VISUAL CODE
+jsconfig.json
+
+# DEPLOYMENT
+.elasticbeanstalk/config.yml
