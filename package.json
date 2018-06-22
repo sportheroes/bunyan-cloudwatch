@@ -18,19 +18,22 @@
   ],
   "author": "Mirko Kiefer <mail@mirkokiefer.com>",
   "license": "MIT",
-  "dependencies": {
-    "aws-sdk": "^2.1.33"
+  "peerDependencies": {
+    "safe-json-stringify": "^1.2.0"
   },
-  "optionalDependencies": {
-    "safe-json-stringify": "^1.0.3"
+  "dependencies": {
+    "aws-sdk": "^2.262.1"
   },
   "devDependencies": {
     "@sportheroes/bk-bunyan": "^2.1.0",
-    "eslint": "^1.10.3",
+    "@sportheroes/bk-standard-version": "4.12.0",
     "eslint-config-airbnb": "^2.1.1",
+    "eslint": "^1.10.3",
     "mocha": "^2.2.5",
+    "moment": "^2.10.6",
+    "mv": "~2",
     "proxyquire": "^1.5.0",
-    "safe-json-stringify": "^1.0.4",
+    "safe-json-stringify": "^1.2.0",
     "sinon": "^1.14.1",
     "uuid": "^2.0.1"
   }
